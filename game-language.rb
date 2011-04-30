@@ -6,7 +6,14 @@ module GameLanguage
   class Language
     def initialize()
 # @actions: list(Verb)
+# @results: list([Action, Class, method])
       @actions = []
+      @results = []
+    end
+
+    def addResult(action, pointer, method)
+      result = @results.find { |x| x
+      @results.push([action, pointer, method])
     end
 
 # Returns the Action relating to the verb parameter.
@@ -20,6 +27,31 @@ module GameLanguage
       a = @actions.find { |x| x.getVerb == verb }
       a = Action.new(verb) if a.nil?
       a.addTarget(target, usableItems);
+    end
+
+# Sorts the actions by each action's verb.
+    def sortActions()
+      @actions.sort_by { |x| x.getVerb.to_s }
+    end
+
+    class Result
+      def initialize(action, pointer, method)
+        @action = action
+        @pointer = pointer
+        @method = method
+      end
+
+      def getAction()
+        return @action
+      end
+
+      def getClassPointer()
+        return @pointer
+      end
+
+      def activate()
+        return @pointer.instance_eval(method)
+      end
     end
 
 # Associates a specific verb with a set of targets.
@@ -46,7 +78,7 @@ module GameLanguage
 # target: :string
 # usableItems: list(:string)
       def addTarget(target, usableItems)
-        t = @targets.find{ |x| x.getTarget == target }
+        t = @targets.find{ |x| x.getTarget.object_id == target.object_id }
         if t.nil?
           t = Target.new(target)
           @targets.push(t)
@@ -60,7 +92,7 @@ module GameLanguage
 # target: :string
 # item: :string
       def addItem(target, item)
-        newTarget = @targets.find { |x| x.getTarget.to_s == target.to_s }
+        newTarget = @targets.find { |x| x.getTarget.object_id == target.object_id }
         return newTarget.addItem(item) if !newTarget.nil?
         return nil
       end

@@ -4,13 +4,15 @@ module GameParser
   class Parser
     def initialize()
 # Language: format [verb_name, [nil, defaultTarget], list([noun used, target noun]), [action per noun pair]]
+# @lang: Language
+
 # Items: format [item_name, list([verb, noun affected by verb])
-      @lang = []
-      @items = []
+      @lang = Language.new
     end
 
+# Sorts the language.
     def sortLang()
-      @lang.sort { |x, y| x[0] <=> y[0] }
+      @lang.sortActions 
     end
 
 #    def sortItems()
@@ -21,7 +23,7 @@ module GameParser
       return @lang
     end
 
-    def addTrigger(trigger)
+#    def addTrigger(trigger)
 
     def addLang(verb, default, itemNoun, targetNoun, action)
       newVerb = @lang.assoc(verb)
