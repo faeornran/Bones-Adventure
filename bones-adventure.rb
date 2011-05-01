@@ -69,18 +69,23 @@ module BonesAdventure
 
 # Defines rooms that players can exist in.
   class Room
-    def initialize(roomID, description, entities, x, y, exits, inventory)
+    def initialize(roomID, name, description, entities, exits, inventory)
       @roomID = roomID # Integer
-      @x = x # integer
-      @y = y # integer
+      @name  = name # :string
+#      @x = x # integer
+#      @y = y # integer
       @description = description # string
       @entities = entities # list(Entity objects)
       @exits = exits # list(strings)
       @inventory = inventory # list(Item objects)
     end
 
-    def getCoords()
-      return [@roomID, @x, @y]
+    def getRoomID()
+      return @roomID #[@roomID, @x, @y]
+    end
+
+    def getName()
+      return @name
     end
 
     def getDescription()

@@ -5,20 +5,29 @@
 module GameLanguage
   class Language
     def initialize()
-# @actions: list(Verb)
-# @results: list([Action, Class, method])
+# @actions: list(Action)
+# @results: list([Action, Class, list(method)])
       @actions = []
       @results = []
     end
 
+# Adds a possible method call to an action provided that action does
+# not already have a specific method tied to the specific class.
+# action: :string
+# pointer: Class
+# method: string
     def addResult(action, pointer, method)
-      result = @results.find { |x| x
-      @results.push([action, pointer, method])
+      result = @results.find { |x| x.getAction.getVerb == action }
+      @results.push(Result.new(action, pointer, method)) if result.nil?
     end
 
 # Returns the Action relating to the verb parameter.
     def getAction(verb)
       return @actions.find { |x| x.getVerb == verb }
+    end
+
+    def getResult(action, pointer)
+      
     end
 
 # Adds the specified action relating to the verb, target and items passed.
@@ -59,6 +68,8 @@ module GameLanguage
       def initialize(verb)
 # @verb: :string
         @verb = verb
+# @defaultTarget: Target
+        @defaultTarget = nil
 # @targets: list(Target)
         @targets = []
       end
@@ -66,6 +77,17 @@ module GameLanguage
 # Returns the verb that defines this Action.
       def getVerb()
         return @verb
+      end
+
+      def getDefaultTarget()
+        return @defaultTarget
+      end
+
+# target: Class
+      def setDefaultTarget(target)
+        t = @targets.find { |x| x.getTarget.object_id == target.object_id }
+        return @defaultTarget = t if !t.nil?
+        return nil
       end
 
 # Returns the possible targets for this Action.
@@ -85,7 +107,8 @@ module GameLanguage
           @targets.sort
         end
         usableItems.each do |x|
-          t.addItem(x)
+          i = t.getItems.find { |y| x == y }
+          t.addItem(x) if i.nil?
         end
       end
 
@@ -101,7 +124,7 @@ module GameLanguage
 # in consideration of the target's verb.
       class Target
         def initialize(target)
-# @target: :string
+# @target: Class
           @target = target
 # @usableItems: list(:string)
           @usableItems = []
@@ -127,8 +150,8 @@ module GameLanguage
 # Add item(:string) to @usableItems if not already there.
         def addItem(item)
           x = nil
-          x = @usableItems.push(item) if @usableItems.find { |x| x.to_s == item.to_s }
-          sortItems
+          x = @usableItems.push(item) if @usableItems.find { |x| x == item }
+          sortItems if !x.nil?
           return x
         end # addItem
       end # Target
