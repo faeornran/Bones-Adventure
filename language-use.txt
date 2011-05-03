@@ -1,0 +1,228 @@
+HOW TO USE THE GAME'S LANGUAGE
+
+Overview:
+
+The language is defined as a list of Action objects.
+Each Action consists of a defining verb and a list of Target objects.
+Each Target consists of a defining target's name and a list of Result objects.
+Each Result consists of a single result and a list of items that can achieve this result.
+
+
+Using a language means interacting directly with the Language object.
+
+To add a new possible Action, do addAction(verb, target, result, usableItems).
+
+Each of those inputs can be either a String or a Symbol,
+and usableItems can be accepted as either of these or as a list of these classes.
+
+To create the new language, you essentially need to feed in a giant list of all of these
+combinations of verbs, targets, results and items and ensure each result has a method that
+corresponds to it available in the Entity class (or subclass if you need extra fields).
+
+
+Once you have the language, set, you can interpret strings and figure out what is meant
+for the verb, the target and the item used and use the getResult method to indicate the
+result of an action by a player.
+
+
+NOTE: Default actions will have a "nil" item- so if your player is fighting a monster and he types
+"kill", and the game has an equipment system, he will use his currently equipped weapon in
+that context against the monster.  If there are multiple monsters, the context will change further
+based upon how you interpret the current state of the game.
+
+
+
+Objects:
+
+
+Language
+
+**************************
+  Fields
+**************************
+    @actions: 
+	A list of Action objects.
+
+**************************
+  Methods
+**************************
+    initialize()
+
+	Returns an empty Language.
+
+    getAction(verb)
+      verb: String or Symbol
+
+	Returns the Action object defined by the passed verb.
+
+    getActions()
+
+	Returns the full list of Action objects.
+
+    getResult(verb, target, item)
+      verb: String or Symbol
+      target: String or Symbol
+      item: String or Symbol
+
+	Returns the method correlating to this combination of inputs as a String.
+	Returns nil if the result is not found.
+
+    addAction(verb, target, result, usableItems)
+      verb: String or Symbol
+      target: String or Symbol
+      result: String or Symbol
+      usableItems: String or Symbol or a List of these
+
+	Adds the specified action relating to the verb, target and items passed.
+	Adds to the action if it already exists.
+	Returns the Action.
+
+    sortActions()
+
+	Sorts the actions by each action's verb.
+
+
+
+
+Action
+
+**************************
+  Fields
+**************************
+    @verb:
+	A Symbol that defines this Action.
+
+    @targets:
+	A list of Targets that can be affected by this verb.
+
+**************************
+  Methods
+**************************
+    initialize(verb)
+      verb: Symbol or String
+
+	Creates a new Action defined by the specified Verb with an empty list of targets.
+
+    getVerb()
+
+	Returns the defining verb.
+
+    getTarget(target)
+      target: String or Symbol
+
+	Returns the Target object defined by the input.
+
+    addTarget(target, result, usableItems)
+      target: String or Symbol
+      result: String or Symbol
+      usableItems: String or Symbol or a list of these
+
+	Adds a specified target for the preceding verb, along with the result
+	and the list of items that can be used to achieve such a result.
+
+
+
+
+Target
+
+**************************
+  Fields
+**************************
+    @target:
+	A Symbol that defines this Target.
+
+    @results:
+	A list of results possible for this Target.
+
+    @items:
+	A list of currently usable items for this Target.  Duplicates not allowed.
+
+**************************
+  Methods
+**************************
+    initialize(target)
+      target: String or Symbol
+
+	Creates a new Target defined by the specified target with empty results and items lists.
+
+    <=>(other)
+      other: Target
+
+	Returns -1 if this Target comes alphabetically before the other Target.
+	Returns 0 if the Target objects use the same defining symbol.
+	Returns 1 if this Target is alphabetically after the other Target.
+
+    getTarget()
+
+	Returns the defining target name.
+
+    getResults()
+
+	Returns the list of Result objects stored by this Target.
+
+    getResult(item)
+      item: String or Symbol
+
+	Returns the resulting method that is called when the indicated item is used.
+
+    getItems()
+
+	Returns the list of items currently used by the Target.
+
+    addresult(result, usableItems)
+      result: String or Symbol
+      usableItems: String or Symbol or a list of these
+
+	Adds the item(s) passed as items that achieve the indicated result.
+	Sorts the @results array if a new result was added.
+	Sorts the @items array if a new item was added to the list of items.
+
+
+
+Result
+
+**************************
+  Fields
+**************************
+    @result:
+	The Symbol that defines the method called by this Result.
+
+    @items:
+	The list of Symbols that defines the list of items that cause this result.
+
+**************************
+  Methods
+**************************
+    initialize(result)
+      result: String or Symbol
+
+	Creates a new Result using the specified result with an empty list of items.
+
+    <=>(other)
+      other: Result
+
+	Returns -1 if this Result comes alphabetically before the other result.
+	Returns 0 if this Result has the same result name as the other result.
+	Returns 1 if this result is alphabetically after the other result.
+
+    getResult()
+
+	Returns the method associated with this Result.
+
+    getItems()
+
+	Returns the list of items used by this Result.
+
+    hasItem(item)
+	item: String or Symbol
+
+	Returns the item if the Result uses the specified item; returns nil otherwise.
+
+    sortItems()
+
+	Sorts the @items array.
+
+    addItem(item)
+      item: String or Symbol
+
+	Adds the specified item to the Result's list and then sorts the list.
