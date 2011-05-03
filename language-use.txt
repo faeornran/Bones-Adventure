@@ -46,18 +46,10 @@ Language
 **************************
   Methods
 **************************
-    initialize()
-
-	Returns an empty Language.
-
-    getAction(verb)
+    [](verb)
       verb: String or Symbol
 
 	Returns the Action object defined by the passed verb.
-
-    getActions()
-
-	Returns the full list of Action objects.
 
     getResult(verb, target, item)
       verb: String or Symbol
@@ -103,11 +95,7 @@ Action
 
 	Creates a new Action defined by the specified Verb with an empty list of targets.
 
-    getVerb()
-
-	Returns the defining verb.
-
-    getTarget(target)
+    [](target)
       target: String or Symbol
 
 	Returns the Target object defined by the input.
@@ -152,22 +140,10 @@ Target
 	Returns 0 if the Target objects use the same defining symbol.
 	Returns 1 if this Target is alphabetically after the other Target.
 
-    getTarget()
-
-	Returns the defining target name.
-
-    getResults()
-
-	Returns the list of Result objects stored by this Target.
-
-    getResult(item)
+    [](item)
       item: String or Symbol
 
 	Returns the resulting method that is called when the indicated item is used.
-
-    getItems()
-
-	Returns the list of items currently used by the Target.
 
     addresult(result, usableItems)
       result: String or Symbol
@@ -205,24 +181,17 @@ Result
 	Returns 0 if this Result has the same result name as the other result.
 	Returns 1 if this result is alphabetically after the other result.
 
-    getResult()
-
-	Returns the method associated with this Result.
-
-    getItems()
-
-	Returns the list of items used by this Result.
-
-    hasItem(item)
+    [](item)
 	item: String or Symbol
 
 	Returns the item if the Result uses the specified item; returns nil otherwise.
+
+    << (item)
+      item: String or Symbol
+
+	Adds the specified item to the Result's list and then sorts the list.
 
     sortItems()
 
 	Sorts the @items array.
 
-    addItem(item)
-      item: String or Symbol
-
-	Adds the specified item to the Result's list and then sorts the list.
