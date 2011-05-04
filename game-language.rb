@@ -42,12 +42,13 @@ module GameLanguage
 
       a.addTarget(target.to_sym, result.to_sym, symbolItems)
       @actions << a if newA
+      sortActions if newA
       a # return the Action
     end # addAction
 
 # Sorts the actions by each action's verb.
     def sortActions()
-      @actions.sort_by { |x| x.verb.to_s }
+      @actions = @actions.sort_by { |x| x.verb.to_s }
     end # sortActions
 
   end # Language
@@ -64,6 +65,15 @@ module GameLanguage
     def [](target)
       return (@targets ||= []).find { |x| x.target == target.to_sym }
     end # []
+
+# Finds all targets using the provided item and returns the list.
+    def itemSearch(item)
+      targets = []
+      @actions.each do |x|
+        targets << x if x[item]
+      end
+      return targets
+    end # itemSearch
 
 # Adds the specified target with the list of usable items.
 # If the target already exists, the items specified will be added.
@@ -96,16 +106,16 @@ module GameLanguage
 # Returns the Result caused by a specific item.
 # Returns nil if not found.
     def [](item)
-      return (@results ||= []).find { |x| x[item] } if @items.find { |x| x == item }
+      return (@results ||= []).find { |x| x[item.to_sym] } if @items.find { |x| x == item.to_sym }
       return nil
     end # []
 
 # Adds the specified list of items to the specifed result.
     def addResult(result, usableItems)
-      r = (@results ||= []).find { |x| x.result == result }
+      r = (@results ||= []).find { |x| x.result == result.to_sym }
       if r.nil?
-        r = Result.new(result)
-        (@results ||= []) << r
+        r = Result.new(result.to_sym)
+        @results  << r
         @results.sort!
       end
 
@@ -138,11 +148,11 @@ module GameLanguage
 # Determines if the result uses the specified item.
     def [](item)
       return (@usableItems ||= []).find { |x| x == item.to_sym }
-    end # hasItem
+    end # []
 
 # Adds a usable item to the Result.
     def << (item)
-      (@usableItems ||= []) << item
+      (@usableItems ||= []) << item.to_sym
       sortItems
     end # <<
 

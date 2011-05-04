@@ -1,74 +1,25 @@
-require 'game-language.rb'
+load 'game-language.rb'
 
 module GameParser
   class Parser
-    def initialize()
-# Language: format [verb_name, [nil, defaultTarget], list([noun used, target noun]), [action per noun pair]]
-# @lang: Language
+    attr_accessor :lang
 
-# Items: format [item_name, list([verb, noun affected by verb])
-      @lang = Language.new
+    def addAction(verb, target, result, itemList)
+      newAction = (@lang ||= GameLanguage::Language.new)[verb]
+      target = :nil if target.nil?
+      itemList = :nil if itemList.nil?
+      newAction = @lang.addAction(verb, target, result, itemList) if newAction.nil?
     end
 
-# Sorts the language.
-    def sortLang()
-      @lang.sortActions 
-    end
-
-#    def sortItems()
-#      @items.sort { |x, y| x[0] <=> y[0] }
-#    end
-
-    def getLang()
-      return @lang
-    end
-
-#    def addTrigger(trigger)
-
-    def addLang(verb, default, itemNoun, targetNoun, action)
-      newVerb = @lang.assoc(verb)
-      @lang.push([verb, [nil, default], [[itemNoun, targetNoun]], [action]]) if newVerb.nil?
-      if !newVerb.nil?
-        newNoun = newVerb[2].index([itemNoun, targetNoun])
-        if !newNoun
-          newVerb[2].push([itemNoun, targetNoun])
-          newVerb[3].push(action)
-        end
-      end
-      sortLang
-    end
-
-#    def addItem(item, verb, noun)
-#      newItem = @items.assoc(item)
-#      @items.push([item, [[verb, noun]]]) if newItem.nil?
-#      if !newItem.nil?
-#        newItem[1].push([verb, noun])
-#        newItem[1].sort { |x, y| x[0] <=> y[0] }
-#      end
-
-#      sortItems
-#    end
-
-    def setDefault(verb, item, target)
-      oldVerb = @lang.assoc(verb)
-      raise "verb not found" if oldVerb.nil?
-      raise "noun not found" if oldVerb[2].index([item, target]).nil?
-      oldVerb[1] = [item, target]
-    end
-
-   # def setNouns(nouns)
-   #   @nouns = nouns.sort
-   # end
-
-   # def setVerbs(verbs)
-   #   @verbs = verbs.sort
-   # end
 
     def formatLine(line)
+      line = line.to_s
       line = line.downcase
       words = line.split(/\W+using\W+|\W+with\W+|\W+to\W+|\W+the\W+|\W+an\W+|\W+a\W+|\W+|\d+/)
       words.delete("")
-    end
+      return words
+    end # formatLinea
+
 
     def parse(line)
 # Break into array of words
@@ -80,42 +31,67 @@ module GameParser
 
 # Add @lang entry to verbs if verb found, otherwise add to nouns
       words.each do |n|
-        nextone = @lang.assoc(n)
-        nextone ? verbs.push(nextone) : nouns.push(n)
+        #nextone = @lang.assoc(n)
+        nextone = (@lang ||= GameLanguage::Language.new)[n]
+        nextone ? verbs << nextone : nouns << n
       end
 
 # No verbs == no actions
       return nil if verbs.empty?
 
 # only the first verb is relevent
-      front = verbs.first
+      action = verbs.first
 
-# Return default verb/item/target combo if no nouns found
-      return [front[0], front[1]] if nouns.empty?
+# Returns the action to allow for context checking.
+      return action if nouns.empty?
+#      if nouns.empty?
+#        trigger = action[:nil]
+#        return nil if trigger.nil?
+#        result = trigger[:nil]
+#        return [nil, result.result] if !result.nil?
+#        return nil
+#      end
 
-# Find first sequential item/target that matches the first verb
-      nouns.each_index do |n|
-        break if n+1 >= nouns.length
-        combo = front[2].index([nouns[n], nouns[n+1]])
-        if combo
-          return [front[0], front[2][combo]] #if combo
+# Helper function to reduce redundancy in the following code.
+      def helper(action, targetNoun, itemNoun)
+        target = action[targetNoun]
+        if !target.nil
+          result = target[itemNoun]
+          return [target.target, itemNoun, result.result] if !result.nil?
         end
+        return nil
       end
 
-# Try to locate first nil item/target combo
+# If perfect language (target/item), return context-free command.
+
+# Finds a target/item combo and returns the target, the item and the resulting method.
+# Also checks for swapped combos.  Obviously, prefers format: "verb target item".
+      nouns.each_index do |n|
+        break if n+1 >= nouns.length
+        #combo = front[2].index([nouns[n], nouns[n+1]])
+        combo = helper(action, nouns[n], nouns[n+1])
+        combo = helper(action, nouns[n+1], nouns[n]) if combo.nil?
+        return combo if !combo.nil?
+      end
+
+# Otherwise, we return a certain list to allow for context checking.
+# First check if item is null and return the target, a list of usable items.
+# Second, check if target is null and return a list of possible targets, and the item.
       nouns.each do |x|
-        puts(x)
-        combo = front[2].index([nil, x])
-        if combo
-          return [front[0], front[2][combo]] #if combo
+        #combo = front[2].index([nil, x])
+        target = action[x]
+        if !target.nil?
+          result = target[:nil]
+          return [target.target, target.items] if !result.nil?
         end
+        
       end
 
 # Something went wrong... kill it with fire
       return nil
 
-    end
+    end # parse
 
-  end
-end
 
+  end # Parser
+end # GameParser
