@@ -7,8 +7,9 @@ module GameParser
     def addAction(verb, target, result, itemList)
       newAction = (@lang ||= GameLanguage::Language.new)[verb]
       target = :nil if target.nil?
-      itemList = :nil if itemList.nil?
+      itemList = [:nil] if itemList.nil?
       newAction = @lang.addAction(verb, target, result, itemList) if newAction.nil?
+      @lang.addAction(verb, target, result, itemList) if !newAction.nil?
     end
 
 
@@ -20,8 +21,11 @@ module GameParser
       return words
     end # formatLinea
 
+    def parse(line, unsortedEntities, unsortedInventory)
+# make sure contexts are sorted
+      entities = unsortedEntities.sort
+      inventory = unsortedInventory.sort
 
-    def parse(line)
 # Break into array of words
       words = formatLine(line)
 
@@ -34,61 +38,79 @@ module GameParser
         #nextone = @lang.assoc(n)
         nextone = (@lang ||= GameLanguage::Language.new)[n]
         nextone ? verbs << nextone : nouns << n
+        break if (!verbs.empty? && nouns.length > 1)
       end
 
+# Empty input? BAD
+      return [:badinput] if verbs.empty? && nouns.empty?
+
 # No verbs == no actions
-      return nil if verbs.empty?
+      return [:verbless, nouns[0]] if verbs.empty?
 
 # only the first verb is relevent
       action = verbs.first
 
-# Returns the action to allow for context checking.
-      return action if nouns.empty?
-#      if nouns.empty?
-#        trigger = action[:nil]
-#        return nil if trigger.nil?
-#        result = trigger[:nil]
-#        return [nil, result.result] if !result.nil?
-#        return nil
-#      end
+# For single commands, checks the list of entities and sees if
+# the action with no item is applicable to only one target.
+# If it is, return the target and the result.
+# If it isn't, command is ambiguous so nil is returned.
+      if nouns.empty?
+        targets = []
+        entities.each do |x|
+          target = action[x]
+          targets << target if !target.nil?
+          return [:ambiguous, action.verb] if targets.length > 1
+        end
+        return [:success, targets[0].target, targets[0][:nil]] if 
+          !targets.empty? && !targets[0][:nil].nil?
+        return [:notarget, action.verb]
+      end
 
 # Helper function to reduce redundancy in the following code.
-      def helper(action, targetNoun, itemNoun)
+      def helper(action, targetNoun, itemNoun, entities, inventory)
         target = action[targetNoun]
-        if !target.nil
+        if !target.nil? && entities.find { |x| x.to_sym == target.target }
           result = target[itemNoun]
-          return [target.target, itemNoun, result.result] if !result.nil?
+          return [:success, target.target, result.result] if 
+            (!result.nil? && inventory.find { |x| x.to_sym == itemNoun.to_sym })
         end
         return nil
       end
 
-# If perfect language (target/item), return context-free command.
-
-# Finds a target/item combo and returns the target, the item and the resulting method.
-# Also checks for swapped combos.  Obviously, prefers format: "verb target item".
-      nouns.each_index do |n|
-        break if n+1 >= nouns.length
-        #combo = front[2].index([nouns[n], nouns[n+1]])
-        combo = helper(action, nouns[n], nouns[n+1])
-        combo = helper(action, nouns[n+1], nouns[n]) if combo.nil?
+# Verb, Target, Noun
+# Verb, Noun, Target
+#
+      if nouns.length > 1
+        combo = helper(action, nouns[0], nouns[1], entities, inventory)
+        combo = helper(action, nouns[1], nouns[0], entities, inventory) if combo.nil?
         return combo if !combo.nil?
+        return [:badinput]
       end
 
-# Otherwise, we return a certain list to allow for context checking.
-# First check if item is null and return the target, a list of usable items.
-# Second, check if target is null and return a list of possible targets, and the item.
-      nouns.each do |x|
+# Verb, Target.
+# See if there is an entity that matches target name and can be affected by verb.
+      target = action[nouns[0]]
+      result = target[:nil] if !target.nil?
+
+      return [:success, target.target, result.result] if (!result.nil? && entities.find { |x| x.name == target.target })
+      return [:notarget, action.verb] if target.nil?
+      return [:ambiguous, action.verb, target.target]
+
+
+#      nouns.each do |x|
         #combo = front[2].index([nil, x])
-        target = action[x]
-        if !target.nil?
-          result = target[:nil]
-          return [target.target, target.items] if !result.nil?
-        end
+#        target = action[x]
+#        if (!target.nil? && entities.find{ |x| x.name == target.target})
+#          
+#          return [target.target, target.items] if !result.nil?
+#        elsif target.nil?
+
+#        end
         
-      end
+#      end
 
 # Something went wrong... kill it with fire
-      return nil
+#      return [:bad_noun, action.verb, 
 
     end # parse
 
