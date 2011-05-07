@@ -1,5 +1,72 @@
 require 'game-parser.rb'
 require 'game-language.rb'
+
+module BonesAdventure
+	class GameObject
+		attr_reader :look
+		
+		def initialize(description)
+			@look = description
+		end # initialize
+	end # GameObject
+
+	class Player < GameObject
+		attr_reader :name :location :inventory
+		
+		def initialize(description, name)
+			super(description)
+			@name = name
+		end # initialize
+		
+		def move(destination)
+			@location = destination
+		end # move
+		
+		def << (item)
+			return (@inventory ||= []) << item.to_sym
+			sortItems
+		end # <<
+		
+		def sortItems()
+			@inventory = (@inventory ||= []).sort_by { |x| x.to_s }
+		end # sortItems
+	end # Player
+	
+	class Room < GameObject
+		attr_reader :roomID :name :exits
+		
+		def initialize(description, name, roomID)
+			super(description)
+			@name = name
+			@roomID = roomID
+		end # initialize
+		
+		def << (exit)
+			@exits = (@inventory ||= []) << exit.to_sym
+			sortExits
+		end # <<
+		
+		def sortExits()
+			@exits = (@exits ||= []).sort_by { |x| x.to_s }
+		end # sortExits
+	end # Room
+	
+	class Exit
+		attr_reader :direction :room
+		
+		def initialize(direction, room)
+			@direction = direction
+			@room = room
+		end # initialize
+	end # Exit
+	
+end # bones-adventure
+
+=begin
+previous code:
+
+require 'game-parser.rb'
+require 'game-language.rb'
 #
 
 module BonesAdventure
@@ -8,7 +75,7 @@ module BonesAdventure
 # @players: list(Player)
       @players = []
 # playerInv: format list(["name", [inventory]])
-#      @playerInv = []
+# @playerInv = []
 # playerRoom: list([roomID, list(Player)])
 # ["name", roomID])
       @rooms = []
@@ -23,7 +90,7 @@ module BonesAdventure
 # @name: string
       @name = name
 # @roomID: integer
-#      @roomID = roomID
+# @roomID = roomID
 # @inventory: list(Item)
       @inventory = []
     end
@@ -40,9 +107,9 @@ module BonesAdventure
   class Entity
     def initialize(name, type, description, nilTriggers, triggers)
 # @name: :string
-      @name = name 
+      @name = name
 # @type: :string
-      @type = type  # {:enemy, :neutral, :object, :player}
+      @type = type # {:enemy, :neutral, :object, :player}
 # @description: :description
       @description = description
 # @triggers format: list([:verb, list([:nounUsed, :targetNoun]), list(:methods)])
@@ -71,9 +138,9 @@ module BonesAdventure
   class Room
     def initialize(roomID, name, description, entities, exits, inventory)
       @roomID = roomID # Integer
-      @name  = name # :string
-#      @x = x # integer
-#      @y = y # integer
+      @name = name # :string
+# @x = x # integer
+# @y = y # integer
       @description = description # string
       @entities = entities # list(Entity objects)
       @exits = exits # list(strings)
@@ -146,3 +213,4 @@ module BonesAdventure
   end
 end
 
+=end
