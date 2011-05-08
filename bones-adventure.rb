@@ -41,8 +41,8 @@ module BonesAdventure
 			@roomID = roomID
 		end # initialize
 		
-		def << (exit)
-			@exits = (@inventory ||= []) << exit.to_sym
+		def << (exitName)
+			@exits = (@inventory ||= []) << exitName.to_sym
 			sortExits
 		end # <<
 		
