@@ -11,6 +11,7 @@
 require 'socket'
 require 'strscan'
 require 'dicebox'
+require 'account-manager.rb'
 
 module Bones
   class Client # an "instance" of bones; generally only one
@@ -25,9 +26,11 @@ module Bones
       @rigged = false
       @rignum = 1
 
-      @aleksey = "NO AUTH"
-      @kurt = "NO AUTH"
-      @crom = "NO AUTH"
+      @aleksey = "Aleksey"
+      @kurt = "Kurt"
+      @crom = "Crom"
+
+      @users = AccountManager::Accounts.new("users")
 
       connect()
       run()
@@ -74,9 +77,9 @@ module Bones
 
     def auth_change(msg, user)
       if msg =~ /PART/
-        user.replace "NO AUTH"
+        @users.deauth(user)
       elsif msg =~ /NICK/
-        user.replace msg.split(/:|\s/)[-1]
+        @users.nickChange(user, msg.split(/:|\s/)[-1])
       end
     end
     
@@ -92,13 +95,17 @@ module Bones
           message = Message.new(msg)
           respond(message)
 
-          if (msg =~ /#{@aleksey}/ && !(msg =~ /#{@kurt}|#{@crom}/))
-            auth_change(msg, @aleksey)
-          elsif (msg =~ /#{@crom}/ && !(msg =~ /#{@aleksey}|#{@kurt}/))
-            auth_change(msg, @crom)
-          elsif (msg =~ /#{@kurt}/ && !(msg =~/#{@aleksey}|#{@crom}/))
-            auth_change(msg, @kurt)
-          end
+          user = msg.split(/:|!/)[1]
+
+          auth_change(msg, user)
+
+          #if (msg =~ /#{@aleksey}/ && !(msg =~ /#{@kurt}|#{@crom}/))
+          #  auth_change(msg, @aleksey)
+          #elsif (msg =~ /#{@crom}/ && !(msg =~ /#{@aleksey}|#{@kurt}/))
+          #  auth_change(msg, @crom)
+          #elsif (msg =~ /#{@kurt}/ && !(msg =~/#{@aleksey}|#{@crom}/))
+          #  auth_change(msg, @kurt)
+          #end
 
 #          if msg =~ /PART/
 #            @aleksey.replace "NO AUTH" if (msg =~ /#{@aleksey}/ && !(msg =~ /#{@kurt}|#{@crom}/))
@@ -112,18 +119,22 @@ module Bones
           #nothing
       end
     end
-    
+
     def respond(msg)
       # msg :name, :hostname, :mode, :origin, :privmsg, :text
-      if msg.name == @crom && msg.text == "Bones, quit"
+      user = @users[msg.name]
+      if msg.name == @crom && user && msg.text == "Bones, quit"
         quit(msg.text)
-      elsif (msg.name == @crom || msg.name == @aleksey) && msg.text =~ /^@@@leave (#.*)/
+      elsif (msg.name == @crom || msg.name == @aleksey) && user && msg.text =~ /^@@@leave (#.*)/
         leave $1.to_s
-      elsif msg.text =~ /^auth .+/
-        @aleksey.replace msg.name if msg.text =~ /PASSWORD/
-        @kurt.replace msg.name if msg.text =~ /PASSWORD/
-        @crom.replace msg.name if msg.text =~ /PASSWORD/
-      elsif msg.name == @crom && msg.text =~ /^whois.*/
+      elsif msg.text =~ /^auth .+ .+/
+        reply(msg, @users.auth(msg.name, $1, $2))
+        #@aleksey.replace msg.name if msg.text =~ /PASSWORD/
+        #@kurt.replace msg.name if msg.text =~ /PASSWORD/
+        #@crom.replace msg.name if msg.text =~ /PASSWORD/
+      elsif msg.text =~ /^register .+ .+/
+        @users.newUser($1, $2)
+      elsif msg.name == @crom && user && msg.text =~ /^whois.*/
         reply(msg, "Aleksey: " + @aleksey) if @aleksey != "NO AUTH"
         reply(msg, "Adam: " + @kurt) if @kurt != "NO AUTH"
         reply(msg, "James: " + @crom) if @crom != "NO AUTH"
@@ -134,11 +145,11 @@ module Bones
         # do command - switch statement or use a command handler class
         c = command_handler(prefix, command, args)
         reply(msg, c) if c
-      elsif (msg.name == @crom || msg.name == @aleksey) && msg.text =~ /^@@@join (#.*)/
+      elsif (msg.name == @crom || msg.name == @aleksey) && user && msg.text =~ /^@@@join (#.*)/
         join $1.to_s
       elsif msg.text == "hay"
         reply(msg, "hay :v")
-      elsif (msg.name == @crom || msg.name == @kurt || msg.name == @aleksey) && msg.text =~ /^@@@rig (\d+-?\d*)/
+      elsif (msg.name == @crom || msg.name == @kurt || msg.name == @aleksey) && user && msg.text =~ /^@@@rig (\d+-?\d*)/
         @rigged = true
         @rignum = $1
       elsif msg.text =~ /^(!|@)(\S+)( (.*))?/
