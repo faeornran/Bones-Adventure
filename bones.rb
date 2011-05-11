@@ -77,12 +77,14 @@ module Bones
     end
 
     def auth_change(msg, user)
-      if msg =~ /PART/
-        @users.deauth(user)
-        puts user + " parted" if !@users.activeUsers.assoc(user)
-        puts "wat" if @users.activeUsers.assoc(user)
-      elsif msg =~ /NICK/
-        @users.nickChange(user, msg.split(/:|\s/)[-1])
+      if @users.activeUsers.assoc(user)
+        if msg =~ /PART/ 
+          @users.deauth(user)
+          puts user + " parted" #if !@users.activeUsers.assoc(user)
+#          puts "wat" if @users.activeUsers.assoc(user)
+        elsif msg =~ /NICK/
+          @users.nickChange(user, msg.split(/:|\s/)[-1])
+        end
       end
     end
     
@@ -298,6 +300,7 @@ module Bones
       # do some weird stuff with ports
       @socket = TCPSocket.open(@server, @port)
       puts "hammer connected!"
+
       @disconnected = false
     end
 
