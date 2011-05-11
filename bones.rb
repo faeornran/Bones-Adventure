@@ -23,8 +23,8 @@ module Bones
       @server = server # one only
       @port = port
       @channels = channels
-      @rigged = false
-      @rignum = 1
+      #@rigged = false
+      @rignum = []
 
       @aleksey = "Aleksey"
       @kurt = "Kurt"
@@ -120,6 +120,15 @@ module Bones
       end
     end
 
+    def loginHelp(msg)
+      normalReply(msg, "Help commands:")
+      normalReply(msg, "Create account: \"/msg Bones register <nick> <password>\"")
+      normalReply(msg, "Change password: \"/msg Bones password <old pw> <new pw>\"")
+      normalReply(msg, "Log in: \"/msg Bones auth <nick> <password>\"")
+      normalReply(msg, "Log out: \"/msg Bones logout\"")
+      normalReply(msg, "See others online: \"/msg Bones whois\"")
+    end
+
     def respond(msg)
       # msg :name, :hostname, :mode, :origin, :privmsg, :text
       user = @users[msg.name]
@@ -127,54 +136,62 @@ module Bones
         quit(msg.text)
       elsif (msg.name == @crom || msg.name == @aleksey) && user && msg.text =~ /^@@@leave (#.*)/
         leave $1.to_s
-      elsif msg.text =~ /^auth .+ .+/
-        reply(msg, @users.auth(msg.name, $1, $2))
-        #@aleksey.replace msg.name if msg.text =~ /PASSWORD/
-        #@kurt.replace msg.name if msg.text =~ /PASSWORD/
-        #@crom.replace msg.name if msg.text =~ /PASSWORD/
-      elsif msg.text =~ /^register .+ .+/
-        @users.newUser($1, $2)
-      elsif msg.name == @crom && user && msg.text =~ /^whois.*/
-        reply(msg, "Aleksey: " + @aleksey) if @aleksey != "NO AUTH"
-        reply(msg, "Adam: " + @kurt) if @kurt != "NO AUTH"
-        reply(msg, "James: " + @crom) if @crom != "NO AUTH"
+      elsif msg.text =~ /^auth (.+) (.+)/
+        normalReply(msg, @users.auth(msg.name, $1, $2))
+      elsif msg.text =~ /^register (.+) (.+)/
+        normalReply(msg, @users.newUser($1, $2))
+      elsif user && msg.text =~ /^password (.+) (.+)/
+        normalReply(msg, @users.changePass(msg.name, $1, $2))
+      elsif (msg.name == @crom) && user && msg.text =~ /^kick (.+)/
+        normalReply(msg, @users.deauth($1))
+      elsif user && msg.text =~ /^logout/
+        normalReply(msg, @users.deauth(msg.name))
+      elsif user && msg.text =~ /^whois.*/
+        reply(msg, "List of online users:", 1)
+        @users.activeUsers.each do |x|
+          reply(msg, "#{x[0]}: #{x[1]}", 1)
+        end
+      elsif msg.privmsg && msg.text =~ /^help/
+        loginHelp(msg)
       elsif msg.text =~ /^bones(:|,*) (\S+)( (.*))?/i
         prefix = "bones"
         command = $2
         args = $4
         # do command - switch statement or use a command handler class
         c = command_handler(prefix, command, args)
-        reply(msg, c) if c
+        normalReply(msg, c) if c
       elsif (msg.name == @crom || msg.name == @aleksey) && user && msg.text =~ /^@@@join (#.*)/
         join $1.to_s
       elsif msg.text == "hay"
-        reply(msg, "hay :v")
-      elsif (msg.name == @crom || msg.name == @kurt || msg.name == @aleksey) && user && msg.text =~ /^@@@rig (\d+-?\d*)/
-        @rigged = true
-        @rignum = $1
+        normalReply(msg, "hay :v")
+      elsif (msg.name == @crom || msg.name == @kurt || msg.name == @aleksey) && user && msg.text =~ /^@@@rig (clear|(\d+-?\d*.*))/
+        #@rigged = true
+        @rignum = [] if $1 == "clear"
+        x = $1.split(/[\s,]+/) if $1 != "clear"
+        @rignum = @rignum + x if !x.nil?
       elsif msg.text =~ /^(!|@)(\S+)( (.*))?/
         prefix = $1
         command = $2
         args = $4
         #do command
         c = command_handler(prefix, command, args)
-        reply(msg, c) if c
+        normalReply(msg, c) if c
       elsif msg.text =~ /^(\d*#)?(\d+)d(\d+)/
         # DICE HANDLER
-        dice = Dicebox::Dice.new(msg.text, @rigged, @rignum)
+        dice = Dicebox::Dice.new(msg.text, @rignum) # @rigged was middle
         begin
           d = dice.roll
-	  @rigged = false
+	  #@rigged = false
           if (d.empty?)
-            reply(msg, "Maximum rolls: 1000d1000, duhr.")
+            normalReply(msg, "Maximum rolls: 1000d1000, duhr.")
           elsif (d.length < 350)
-            reply(msg, d)
+            normalReply(msg, d)
           else
-            reply(msg, "I don't have enough dice to roll that!")
+            normalReply(msg, "I don't have enough dice to roll that!")
           end
         rescue Exception => e
           puts "ERROR: " + e.to_s
-          reply(msg, "roll smarter!")
+          normalReply(msg, "roll smarter!")
         end
       end
     end
@@ -184,9 +201,15 @@ module Bones
       return c.handle
     end
 
-    def reply(msg, message) # reply to a pm or channel message
+    def normalReply(msg, message)
+      reply(msg, message, nil)
+    end
+
+    def reply(msg, message, nonamereply) # reply to a pm or channel message
       if msg.privmsg
         @connection.speak "#{msg.mode} #{msg.name} :#{message}"
+      elsif !nonamereply.nil?
+        @connection.speak "#{msg.mode} #{msg.origin} :#{message}"
       else
         @connection.speak "#{msg.mode} #{msg.origin} :#{msg.name}, #{message}"
       end
@@ -196,11 +219,6 @@ module Bones
       @connection.speak "PART #{channel}"
     end
 
-    def rig(num)
-      @rignum = num
-      @rigged = true
-    end
-    
     def pm(person, message)
       @connection.speak "PRIVMSG #{person} :#{message}"
     end
@@ -251,7 +269,7 @@ module Bones
             @privmsg = true
           end
           @text = $6.chomp
-          print()
+          print() if !(msg =~ /auth .+|^register .+/)
       end
     end
 
@@ -385,6 +403,7 @@ module Bones
       result += "Bugs: must specify the '1' in '1d20'."
       return result
     end
+
 
     def handle_join(client,channel)
       client.join(channel)
