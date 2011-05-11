@@ -2,11 +2,18 @@ module Dicebox # dice functions by JD. http://d20.jonnydigital.com/
 
   class Dice
 
-    def initialize(line, rig, num)
+    def initialize(line, rig_queue)
       @line = line.to_s
       @dice_regex = /((\+|-)?(\d+)(d\d+)?)/
-      @rigged = rig
-      rigline = num.to_s.split("-")
+      @rig_queue = rig_queue
+      #@rigged = rig
+#      rigline = num.to_s.split("-")
+#      @riglow = @righigh = rigline[0].to_i
+#      @righigh = rigline[1].to_i if rigline.length > 1
+    end
+
+    def rig_get(val)
+      rigline = val.to_s.split("-")
       @riglow = @righigh = rigline[0].to_i
       @righigh = rigline[1].to_i if rigline.length > 1
     end
@@ -112,8 +119,9 @@ module Dicebox # dice functions by JD. http://d20.jonnydigital.com/
     end
 
     def random(value)
-      if @rigged
-        @rigged = false
+      if !@rig_queue.empty?
+#        @rigged = false
+        rig_get(@rig_queue.delete_at(0))
         return value if value < @riglow
         return @riglow if @riglow == @righigh
         return rand(@righigh-@riglow+1)+@riglow
