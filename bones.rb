@@ -25,6 +25,7 @@ module Bones
       @channels = channels
       #@rigged = false
       @rignum = []
+      @namedrig = []
 
       @aleksey = "Aleksey"
       @kurt = "Kurt"
@@ -78,6 +79,8 @@ module Bones
     def auth_change(msg, user)
       if msg =~ /PART/
         @users.deauth(user)
+        puts user + " parted" if !@users.activeUsers.assoc(user)
+        puts "wat" if @users.activeUsers.assoc(user)
       elsif msg =~ /NICK/
         @users.nickChange(user, msg.split(/:|\s/)[-1])
       end
@@ -164,11 +167,14 @@ module Bones
         join $1.to_s
       elsif msg.text == "hay"
         normalReply(msg, "hay :v")
-      elsif (msg.name == @crom || msg.name == @kurt || msg.name == @aleksey) && user && msg.text =~ /^@@@rig (clear|(\d+-?\d*.*))/
-        #@rigged = true
+      elsif ((msg.name == @crom || msg.name == @kurt || msg.name == @aleksey) && user && 
+             msg.text =~ /^@@@rig (clear|([a-zA-Z]+\s+)?\d+(-\d+)?.*)/)
         @rignum = [] if $1 == "clear"
+        @namedrig = [] if $1 == "clear"
         x = $1.split(/[\s,]+/) if $1 != "clear"
-        @rignum = @rignum + x if !x.nil?
+        name = x.delete_at(0) if !x.nil? && !(x[0] =~ /\d+-?\d*.*/)
+        @namedrig = @namedrig + [[name.downcase, x]] if !name.nil?
+        @rignum = @rignum + x if !x.nil? && name.nil?
       elsif msg.text =~ /^(!|@)(\S+)( (.*))?/
         prefix = $1
         command = $2
@@ -178,7 +184,7 @@ module Bones
         normalReply(msg, c) if c
       elsif msg.text =~ /^(\d*#)?(\d+)d(\d+)/
         # DICE HANDLER
-        dice = Dicebox::Dice.new(msg.text, @rignum) # @rigged was middle
+        dice = Dicebox::Dice.new(msg.text, @rignum, @namedrig, msg.name) # @rigged was middle
         begin
           d = dice.roll
 	  #@rigged = false

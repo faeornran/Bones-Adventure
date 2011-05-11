@@ -12,10 +12,10 @@ require 'bones'
 # channels too quickly after connecting. Manually encourage it to join with this:
 # /msg bones @@@join #channel
 
-your_bot_name = "Bones"
+your_bot_name = "Bones2"
 server_to_join = "seattle.uwirc.com"
 port = 6667
-list_of_channels = ["#pnpga"]
+list_of_channels = ["#test"]
 
 # NOTE: To join multiple networks, you can copy this file to create two Boneses.
 # Alternatively, if you're familiar with Ruby, it should be straightforward. ('_')b
