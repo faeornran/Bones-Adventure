@@ -28,7 +28,7 @@ module Bones
       @namedrig = []
 
       @aleksey = "Aleksey"
-      @kurt = "Kurt"
+      @kurt = "adam"
       @crom = "Crom"
 
       @users = AccountManager::Accounts.new("users")
