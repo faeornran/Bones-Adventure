@@ -38,8 +38,10 @@ module Bones
     end
 
     def connect
+      puts "Connecting."
       @connection = Connection.new(@server, @port)
-      
+      puts "Should be connected."
+
       @connection.speak "NICK #{@nick}"
       @connection.speak "USER #{@nick} bones * :Bones Dicebot: http://d20.jonnydigital.com/"
 
@@ -68,6 +70,7 @@ module Bones
 
       while @running
         while @connection.disconnected? # never give up reconnect
+          puts "closed: " + @socket.closed?.to_s + " disconnected: " + @disconnected.to_s 
           sleep 10
           connect()
         end
@@ -98,6 +101,7 @@ module Bones
           join_quietly(@channels)
         when /^:/ # msg
           message = Message.new(msg)
+          puts(message.to_s)
           respond(message)
 
           user = msg.split(/:|!/)[1]
@@ -170,10 +174,12 @@ module Bones
       elsif msg.text == "hay"
         normalReply(msg, "hay :v")
       elsif ((msg.name == @crom || msg.name == @kurt || msg.name == @aleksey) && user && 
-             msg.text =~ /^@@@rig (clear|([a-zA-Z]+\s+)?\d+(-\d+)?.*)/)
+             msg.text =~ /^@@@rig (clear|display|([a-zA-Z]+\s+)?\d+(-\d+)?.*)/)
         @rignum = [] if $1 == "clear"
         @namedrig = [] if $1 == "clear"
-        x = $1.split(/[\s,]+/) if $1 != "clear"
+        normalReply(msg, "rignum: " + @rignum.join(" ")) if $1 == "display"
+        normalReply(msg, "namedrig: " + @namedrig.join(" ")) if $1 == "display"
+        x = $1.split(/[\s,]+/) if $1 != "clear" && $1 != "display"
         name = x.delete_at(0) if !x.nil? && !(x[0] =~ /\d+-?\d*.*/)
         @namedrig = @namedrig + [[name.downcase, x]] if !name.nil?
         @rignum = @rignum + x if !x.nil? && name.nil?
